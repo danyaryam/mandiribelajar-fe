@@ -1,0 +1,95 @@
+import { z } from 'zod';
+
+import { apiFetch } from './client';
+import { endpoints } from './endpoints';
+
+// ----------------------------------------------------------------------
+// Schemas — mirror api-contract.md §4 (auth).
+// ----------------------------------------------------------------------
+
+export const userSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  role: z.string().optional(),
+  emailVerified: z.boolean().optional(),
+});
+
+export type User = z.infer<typeof userSchema>;
+
+export const loginResponseSchema = z.object({
+  accessToken: z.string(),
+  tokenType: z.string().optional(),
+  expiresIn: z.number().optional(),
+  user: userSchema,
+});
+
+export type LoginResponse = z.infer<typeof loginResponseSchema>;
+
+export const registerRequestSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8),
+  acceptedTermsVersion: z.string(),
+});
+
+export type RegisterRequest = z.infer<typeof registerRequestSchema>;
+
+// ----------------------------------------------------------------------
+// Client-side auth state token storage. Access token is kept in memory
+// only (not persisted) to avoid XSS-risk persistence; refresh via cookie.
+// ----------------------------------------------------------------------
+
+// Simple in-memory token holder. In a fuller implementation this ties into
+// an httpOnly refresh cookie + a coordinated refresh-on-401 interceptor.
+let accessToken: string | null = null;
+
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+}
+
+export function getAccessToken() {
+  return accessToken;
+}
+
+// ----------------------------------------------------------------------
+// Fetchers
+// ----------------------------------------------------------------------
+
+export async function login(email: string, password: string): Promise<LoginResponse> {
+  const { data } = await apiFetch<unknown>(endpoints.auth.login, {
+    method: 'post',
+    body: { email, password },
+  });
+  const parsed = loginResponseSchema.parse(data);
+  setAccessToken(parsed.accessToken);
+  return parsed;
+}
+
+export async function register(payload: RegisterRequest) {
+  const { data } = await apiFetch<unknown>(endpoints.auth.register, {
+    method: 'post',
+    body: payload,
+  });
+  return loginResponseSchema.parse(data);
+}
+
+export async function logout(refreshToken: string) {
+  await apiFetch<unknown>(endpoints.auth.logout, {
+    method: 'post',
+    body: { refreshToken },
+  });
+  setAccessToken(null);
+}
+
+export async function fetchMe(signal?: AbortSignal): Promise<User | null> {
+  const token = getAccessToken();
+  if (!token) return null;
+
+  const { data } = await apiFetch<unknown>(endpoints.auth.me, {
+    signal,
+    headers: { Authorization: `Bearer ${token}` },
+    next: { revalidate: 0 },
+  });
+  return userSchema.parse(data);
+}
