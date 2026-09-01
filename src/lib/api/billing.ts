@@ -84,6 +84,27 @@ export async function getPayments(): Promise<Payment[]> {
   return nullableList(paymentSchema).parse(data);
 }
 
+export const paymentDetailSchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  amount: z.number(),
+  currency: z.string(),
+  provider: z.string(),
+  providerReference: z.string().optional(),
+  plan: z.object({ id: z.string(), name: z.string() }).nullable().optional(),
+  createdAt: z.string(),
+  paidAt: z.string().nullable().optional(),
+});
+
+export type PaymentDetail = z.infer<typeof paymentDetailSchema>;
+
+export async function getPayment(paymentId: string): Promise<PaymentDetail> {
+  const { data } = await apiFetch<unknown>(endpoints.billing.paymentDetails(paymentId), {
+    headers: { Authorization: `Bearer ${ensureToken()}` },
+  });
+  return paymentDetailSchema.parse(data);
+}
+
 function cryptoRandomUUID(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();

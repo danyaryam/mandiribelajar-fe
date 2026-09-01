@@ -3,7 +3,13 @@ import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 
 import { env } from 'src/lib/env';
-import { FAQ_TAG, ARTICLES_TAG, SITE_CONTENT_TAG, ARTICLE_CATEGORIES_TAG } from 'src/lib/api';
+import {
+  FAQ_TAG,
+  CATALOG_TAG,
+  ARTICLES_TAG,
+  SITE_CONTENT_TAG,
+  ARTICLE_CATEGORIES_TAG,
+} from 'src/lib/api';
 
 // ----------------------------------------------------------------------
 // Webhook invalidasi ISR on-demand — dipanggil backend/CMS saat konten
@@ -19,7 +25,13 @@ import { FAQ_TAG, ARTICLES_TAG, SITE_CONTENT_TAG, ARTICLE_CATEGORIES_TAG } from 
 // `slugs` — slug artikel; di-map ke tag per-artikel `article:<slug>`.
 // Endpoint menjawab 503 bila REVALIDATE_TOKEN tidak dikonfigurasi.
 
-const ALLOWED_TAGS = new Set([ARTICLES_TAG, ARTICLE_CATEGORIES_TAG, FAQ_TAG, SITE_CONTENT_TAG]);
+const ALLOWED_TAGS = new Set([
+  ARTICLES_TAG,
+  ARTICLE_CATEGORIES_TAG,
+  FAQ_TAG,
+  SITE_CONTENT_TAG,
+  CATALOG_TAG,
+]);
 
 const bodySchema = z
   .object({
