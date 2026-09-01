@@ -1,11 +1,16 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Button from '@mui/material/Button';
 
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
+
+import { logout } from 'src/lib/api/auth';
 
 // ----------------------------------------------------------------------
 // Navigasi header siswa (dashboard, latihan, profil + sub-halaman).
@@ -21,6 +26,22 @@ const studentLinks = [
 ];
 
 export function StudentNav() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  const handleLogout = async () => {
+    setBusy(true);
+    try {
+      await logout();
+    } catch {
+      // Logout tetap dianggap sukses lokal walau backend logout gagal.
+    } finally {
+      setBusy(false);
+      router.push(paths.auth.login);
+      router.refresh();
+    }
+  };
+
   return (
     <Box
       component="nav"
@@ -40,6 +61,15 @@ export function StudentNav() {
       ))}
       <Button variant="contained" size="medium" component={RouterLink} href={paths.usage}>
         Kuota
+      </Button>
+      <Button
+        variant="text"
+        size="medium"
+        disabled={busy}
+        onClick={handleLogout}
+        sx={{ fontWeight: 700, color: 'error.main' }}
+      >
+        {busy ? 'Keluar…' : 'Logout'}
       </Button>
     </Box>
   );
