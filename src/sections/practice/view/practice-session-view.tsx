@@ -29,6 +29,8 @@ import {
   getSessionStatus,
 } from 'src/lib/api/practice';
 
+import { MathText } from 'src/components/math-text';
+
 // ----------------------------------------------------------------------
 // Halaman pengerjaan soal. Jawaban di-autosave; submit mengunci & menilai.
 // ----------------------------------------------------------------------
@@ -49,6 +51,8 @@ export function PracticeSessionView({ sessionId }: Props) {
   >({});
   const [revision, setRevision] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState(8);
+  const [phase, setPhase] = useState<'membuat' | 'menyiapkan' | 'hampir'>('membuat');
 
   useEffect(() => {
     let cancelled = false;
@@ -128,6 +132,21 @@ export function PracticeSessionView({ sessionId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
+  // Smooth progress + phase while waiting for question generation.
+  useEffect(() => {
+    if (!loading) return undefined;
+    const timer = window.setInterval(() => {
+      setProgress((prev) => {
+        // Never reach 100% until the session is actually ready.
+        const next = Math.min(prev + Math.floor(Math.random() * 4) + 1, 92);
+        if (next >= 50) setPhase('menyiapkan');
+        if (next >= 80) setPhase('hampir');
+        return next;
+      });
+    }, 600);
+    return () => window.clearInterval(timer);
+  }, [loading]);
+
   const question: SessionQuestion | undefined = session?.questions[current];
   const answeredCount = Object.values(drafts).filter(
     (d) => (d.selectedOptionId && d.selectedOptionId !== '') || (d.text && d.text !== '')
@@ -156,9 +175,86 @@ export function PracticeSessionView({ sessionId }: Props) {
   };
 
   if (loading) {
+    const label =
+      phase === 'membuat'
+        ? 'Membuat soal…'
+        : phase === 'menyiapkan'
+          ? 'Menyiapkan soal…'
+          : 'Hampir selesai…';
+    const hint =
+      phase === 'membuat'
+        ? 'AI sedang merancang soal sesuai mapel & kelas yang kamu pilih.'
+        : phase === 'menyiapkan'
+          ? 'Soal hampir jadi, sebentar lagi kamu bisa mulai mengerjakan.'
+          : 'Memuat soal untuk dipahami…';
     return (
-      <Box sx={{ maxWidth: 760, mx: 'auto', px: 3, py: 12, textAlign: 'center' }}>
-        <Typography color="text.secondary">Memuat latihan…</Typography>
+      <Box
+        sx={{
+          minHeight: '65vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 3,
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            width: '100%',
+            maxWidth: 520,
+            p: { xs: 4, md: 5 },
+            borderRadius: 4,
+            textAlign: 'center',
+            border: (t) => `solid 1px ${varAlpha(t.vars.palette.grey['500Channel'], 0.16)}`,
+            boxShadow: '0 12px 40px rgba(0,0,0,.06)',
+          }}
+        >
+          <Box
+            sx={{
+              width: 72,
+              height: 72,
+              mx: 'auto',
+              mb: 3,
+              borderRadius: 3,
+              display: 'grid',
+              placeItems: 'center',
+              color: '#fff',
+              fontSize: 34,
+              background: `linear-gradient(135deg, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.95)}, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.85)} 55%, ${varAlpha(theme.vars.palette.secondary.mainChannel, 0.75)})`,
+              animation: 'pulse 1.6s ease-in-out infinite',
+              '@keyframes pulse': {
+                '0%,100%': { transform: 'scale(1)', boxShadow: '0 8px 24px rgba(0,127,150,.25)' },
+                '50%': { transform: 'scale(1.06)', boxShadow: '0 12px 32px rgba(142,51,255,.3)' },
+              },
+            }}
+          >
+            🧠
+          </Box>
+
+          <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+            {label}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {hint}
+          </Typography>
+
+          <LinearProgress
+            variant="determinate"
+            value={progress}
+            sx={{
+              height: 10,
+              borderRadius: 5,
+              mb: 1.5,
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 5,
+                background: `linear-gradient(90deg, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.9)}, ${varAlpha(theme.vars.palette.secondary.mainChannel, 0.9)})`,
+              },
+            }}
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+            {progress}%
+          </Typography>
+        </Paper>
       </Box>
     );
   }
@@ -218,7 +314,7 @@ export function PracticeSessionView({ sessionId }: Props) {
           sx={{ mb: 2 }}
         />
         <Typography variant="h6" sx={{ mb: 4, lineHeight: 1.6 }}>
-          {question.prompt}
+          <MathText text={question.prompt} />
         </Typography>
 
         {question.type === 'multiple_choice' ? (
@@ -264,7 +360,9 @@ export function PracticeSessionView({ sessionId }: Props) {
                   >
                     {opt.label}
                   </Box>
-                  <Typography sx={{ fontWeight: 500 }}>{opt.text}</Typography>
+                  <Typography component="div" sx={{ fontWeight: 500 }}>
+                    <MathText text={opt.text} />
+                  </Typography>
                 </Box>
               );
             })}
