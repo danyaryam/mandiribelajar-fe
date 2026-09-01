@@ -4,6 +4,7 @@ import type { QuestionReport } from 'src/lib/api/admin';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { varAlpha } from 'minimal-shared/utils';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -12,6 +13,7 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 
 import { paths } from 'src/routes/paths';
@@ -31,6 +33,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function AdminQuestionReportsView() {
+  const theme = useTheme();
   const router = useRouter();
   const [reports, setReports] = useState<QuestionReport[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -58,13 +61,31 @@ export function AdminQuestionReportsView() {
   };
 
   return (
-    <Box sx={{ maxWidth: 860, mx: 'auto', px: 3, py: 8 }}>
-      <Typography variant="h4" gutterBottom>
-        Laporan Soal
-      </Typography>
+    <Box sx={{ maxWidth: 860, mx: 'auto', px: 3, py: 5 }}>
+      {/* Header */}
+      <Box
+        sx={{
+          borderRadius: 3,
+          p: { xs: 3, md: 4 },
+          mb: 4,
+          color: '#fff',
+          ...theme.mixins.bgGradient({
+            images: [
+              `linear-gradient(135deg, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.92)}, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.85)} 55%, ${varAlpha(theme.vars.palette.secondary.mainChannel, 0.75)})`,
+            ],
+          }),
+        }}
+      >
+        <Typography variant="h4" sx={{ fontWeight: 800 }}>
+          Laporan Soal
+        </Typography>
+        <Typography sx={{ opacity: 0.92, mt: 0.5 }}>
+          Review laporan kualitas soal dari pengguna.
+        </Typography>
+      </Box>
 
       {error && (
-        <Alert severity="warning" sx={{ mb: 3 }}>
+        <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
           {error}
         </Alert>
       )}
@@ -72,21 +93,44 @@ export function AdminQuestionReportsView() {
       {loading && <Typography color="text.secondary">Memuat…</Typography>}
 
       {!loading && reports.length === 0 && (
-        <Typography color="text.secondary">Tidak ada laporan terbuka.</Typography>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 5,
+            textAlign: 'center',
+            borderRadius: 3,
+            border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.16)}`,
+          }}
+        >
+          <Typography sx={{ fontSize: 40 }}>✅</Typography>
+          <Typography color="text.secondary">Tidak ada laporan terbuka.</Typography>
+        </Paper>
       )}
 
       <Stack spacing={2}>
         {reports.map((report) => (
-          <Paper key={report.id} sx={{ p: 3 }}>
+          <Paper
+            key={report.id}
+            elevation={0}
+            sx={{
+              p: { xs: 2.5, md: 3 },
+              borderRadius: 3,
+              border: `solid 1px ${varAlpha(theme.vars.palette.warning.mainChannel, 0.2)}`,
+              background: `linear-gradient(135deg, ${varAlpha(theme.vars.palette.warning.mainChannel, 0.05)}, rgba(255,255,255,0))`,
+              transition: 'transform .18s, box-shadow .18s',
+              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 22px rgba(0,0,0,.08)' },
+            }}
+          >
             <Box
               sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
             >
-              <Typography sx={{ fontWeight: 600 }}>
+              <Typography sx={{ fontWeight: 700 }}>
                 Soal: {report.questionId.slice(0, 8)}…
               </Typography>
               <Chip
                 label={STATUS_LABEL[report.status] ?? report.status}
                 size="small"
+                variant="soft"
                 color={report.status === 'open' ? 'warning' : 'default'}
               />
             </Box>
@@ -103,11 +147,16 @@ export function AdminQuestionReportsView() {
               <Button
                 variant="contained"
                 color="success"
+                sx={{ borderRadius: 2, fontWeight: 700 }}
                 onClick={() => handleReview(report, 'reviewed')}
               >
                 Tandai Review
               </Button>
-              <Button variant="outlined" onClick={() => handleReview(report, 'dismissed')}>
+              <Button
+                variant="outlined"
+                sx={{ borderRadius: 2, fontWeight: 700 }}
+                onClick={() => handleReview(report, 'dismissed')}
+              >
                 Abaikan
               </Button>
             </Stack>

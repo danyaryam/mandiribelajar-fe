@@ -1,8 +1,11 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { z } from 'zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { varAlpha } from 'minimal-shared/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -10,7 +13,9 @@ import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
+import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 
 import { paths } from 'src/routes/paths';
@@ -35,6 +40,50 @@ const schema = z
     message: 'Konfirmasi kata sandi tidak cocok.',
     path: ['confirmPassword'],
   });
+
+function AuthShell({ children }: { children: ReactNode }) {
+  const theme = useTheme();
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        p: { xs: 3, md: 6 },
+        bgcolor: (t) => t.vars.palette.background.default,
+      }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: 440,
+          p: { xs: 3, md: 5 },
+          borderRadius: 4,
+          border: (t) => `solid 1px ${varAlpha(t.vars.palette.grey['500Channel'], 0.16)}`,
+          boxShadow: '0 12px 40px rgba(0,0,0,.08)',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 5,
+            ...theme.mixins.bgGradient({
+              images: [
+                `linear-gradient(90deg, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.95)}, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.9)} 55%, ${varAlpha(theme.vars.palette.secondary.mainChannel, 0.8)})`,
+              ],
+            }),
+          },
+        }}
+      >
+        {children}
+      </Paper>
+    </Box>
+  );
+}
 
 export function ResetPasswordView() {
   const router = useRouter();
@@ -64,30 +113,32 @@ export function ResetPasswordView() {
 
   if (!token) {
     return (
-      <Box sx={{ maxWidth: 440, mx: 'auto', px: 3, py: 10 }}>
-        <Alert severity="warning">
+      <AuthShell>
+        <Alert severity="warning" sx={{ borderRadius: 2 }}>
           Tautan reset tidak valid. Silakan ulangi dari halaman lupa kata sandi.
         </Alert>
-      </Box>
+      </AuthShell>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: 440, mx: 'auto', px: 3, py: 10 }}>
+    <AuthShell>
       <Stack spacing={1} sx={{ mb: 4, textAlign: 'center' }}>
-        <Typography variant="h4">Atur Ulang Kata Sandi</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 800 }}>
+          Atur Ulang Kata Sandi
+        </Typography>
         <Typography color="text.secondary">Buat kata sandi baru untuk akun Anda.</Typography>
       </Stack>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
           {error}
         </Alert>
       )}
 
       {done ? (
         <Stack spacing={2.5}>
-          <Alert severity="success">
+          <Alert severity="success" sx={{ borderRadius: 2 }}>
             Kata sandi berhasil diubah. Silakan masuk dengan kata sandi baru.
           </Alert>
           <Button variant="contained" onClick={() => router.push(paths.auth.login)}>
@@ -109,7 +160,13 @@ export function ResetPasswordView() {
               type="password"
               autoComplete="new-password"
             />
-            <Button type="submit" variant="contained" size="large" disabled={submitting}>
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={submitting}
+              sx={{ py: 1.4, fontWeight: 800, borderRadius: 2 }}
+            >
               {submitting ? 'Menyimpan…' : 'Simpan Kata Sandi'}
             </Button>
           </Stack>
@@ -120,10 +177,15 @@ export function ResetPasswordView() {
         <Typography variant="body2" color="text.secondary">
           Sudah ingat?
         </Typography>
-        <Link component={RouterLink} href={paths.auth.login} variant="body2">
+        <Link
+          component={RouterLink}
+          href={paths.auth.login}
+          variant="body2"
+          sx={{ fontWeight: 700 }}
+        >
           Masuk
         </Link>
       </Stack>
-    </Box>
+    </AuthShell>
   );
 }

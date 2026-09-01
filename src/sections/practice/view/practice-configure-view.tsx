@@ -2,15 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { varAlpha } from 'minimal-shared/utils';
 
 import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
 import Alert from '@mui/material/Alert';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
+import { useTheme } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import CardContent from '@mui/material/CardContent';
 
 import { paths } from 'src/routes/paths';
 
@@ -24,11 +27,11 @@ import {
 } from 'src/lib/api/use-catalog';
 
 // ----------------------------------------------------------------------
-// Konfigurasi latihan: pilih jenjang → kelas → mata pelajaran → tipe/jumlah,
-// lalu buat sesi (Fase 3, tanpa AI — soal dari bank soal tervalidasi).
+// Konfigurasi latihan: pilih jenjang → kelas → mata pelajaran → jumlah soal.
 // ----------------------------------------------------------------------
 
 export function PracticeConfigureView() {
+  const theme = useTheme();
   const router = useRouter();
   const [levelId, setLevelId] = useState('');
   const [gradeId, setGradeId] = useState('');
@@ -45,6 +48,12 @@ export function PracticeConfigureView() {
   });
 
   const canCreate = levelId && gradeId && subjectId;
+
+  const steps = [
+    { label: 'Jenjang', active: !!levelId, query: levelsQuery },
+    { label: 'Kelas', active: !!gradeId, query: gradesQuery },
+    { label: 'Mapel', active: !!subjectId, query: subjectsQuery },
+  ];
 
   const handleCreate = async () => {
     if (!canCreate) return;
@@ -68,7 +77,6 @@ export function PracticeConfigureView() {
       await router.push(paths.courses.session(session.id));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Terjadi kesalahan. Coba lagi.');
-      // If unauthenticated, send to login.
       if (err instanceof ApiError && err.status === 0 && !getAccessToken()) {
         router.push(paths.auth.login);
       }
@@ -78,93 +86,138 @@ export function PracticeConfigureView() {
   };
 
   return (
-    <Box sx={{ maxWidth: 620, mx: 'auto', px: 3, py: 8 }}>
-      <Typography variant="h4" gutterBottom>
-        Konfigurasi Latihan
-      </Typography>
-      <Typography color="text.secondary" sx={{ mb: 4 }}>
-        Pilih jenjang, kelas, dan mata pelajaran untuk mulai berlatih.
-      </Typography>
+    <Box sx={{ maxWidth: 620, mx: 'auto', px: 3, py: 5 }}>
+      {/* Header */}
+      <Box
+        sx={{
+          borderRadius: 3,
+          p: { xs: 3, md: 4 },
+          mb: 4,
+          color: '#fff',
+          ...theme.mixins.bgGradient({
+            images: [
+              `linear-gradient(135deg, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.92)}, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.85)} 55%, ${varAlpha(theme.vars.palette.secondary.mainChannel, 0.75)})`,
+            ],
+          }),
+        }}
+      >
+        <Typography variant="h4" sx={{ fontWeight: 800 }}>
+          Konfigurasi Latihan
+        </Typography>
+        <Typography sx={{ opacity: 0.92, mt: 0.5 }}>
+          Pilih jenjang, kelas, dan mata pelajaran untuk mulai berlatih.
+        </Typography>
+      </Box>
 
       {error && (
-        <Alert severity="warning" sx={{ mb: 3 }}>
+        <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
           {error}
         </Alert>
       )}
 
-      <Paper sx={{ p: 3 }}>
-        <Stack spacing={2.5}>
-          <TextField
-            select
-            label="Jenjang"
-            value={levelId}
-            onChange={(e) => {
-              setLevelId(e.target.value);
-              setGradeId('');
-              setSubjectId('');
-            }}
-          >
-            {(levelsQuery.data ?? []).map((l) => (
-              <MenuItem key={l.id} value={l.id}>
-                {l.name}
-              </MenuItem>
+      <Card sx={{ borderRadius: 3, mb: 3 }}>
+        <CardContent>
+          {/* Stepper summary */}
+          <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
+            {steps.map((s, i) => (
+              <Box
+                key={s.label}
+                sx={{
+                  flex: 1,
+                  textAlign: 'center',
+                  py: 1.2,
+                  borderRadius: 2,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  border: (t) =>
+                    `solid 1px ${s.active ? 'transparent' : varAlpha(t.vars.palette.grey['500Channel'], 0.2)}`,
+                  color: s.active ? '#fff' : 'text.secondary',
+                  bgcolor: s.active ? theme.vars.palette.primary.main : 'transparent',
+                  ...(s.active && {
+                    boxShadow: `0 6px 18px ${varAlpha(theme.vars.palette.primary.mainChannel, 0.35)}`,
+                  }),
+                }}
+              >
+                {i + 1}. {s.label}
+              </Box>
             ))}
-          </TextField>
+          </Stack>
 
-          <TextField
-            select
-            label="Kelas"
-            value={gradeId}
-            disabled={!levelId}
-            onChange={(e) => {
-              setGradeId(e.target.value);
-              setSubjectId('');
-            }}
-          >
-            {(gradesQuery.data ?? []).map((g) => (
-              <MenuItem key={g.id} value={g.id}>
-                {g.name}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Stack spacing={2.5}>
+            <TextField
+              select
+              label="Jenjang"
+              value={levelId}
+              onChange={(e) => {
+                setLevelId(e.target.value);
+                setGradeId('');
+                setSubjectId('');
+              }}
+            >
+              {(levelsQuery.data ?? []).map((l) => (
+                <MenuItem key={l.id} value={l.id}>
+                  {l.name}
+                </MenuItem>
+              ))}
+            </TextField>
 
-          <TextField
-            select
-            label="Mata Pelajaran"
-            value={subjectId}
-            disabled={!gradeId}
-            onChange={(e) => setSubjectId(e.target.value)}
-          >
-            {(subjectsQuery.data ?? []).map((s) => (
-              <MenuItem key={s.id} value={s.id}>
-                {s.name}
-              </MenuItem>
-            ))}
-          </TextField>
+            <TextField
+              select
+              label="Kelas"
+              value={gradeId}
+              disabled={!levelId}
+              onChange={(e) => {
+                setGradeId(e.target.value);
+                setSubjectId('');
+              }}
+            >
+              {(gradesQuery.data ?? []).map((g) => (
+                <MenuItem key={g.id} value={g.id}>
+                  {g.name}
+                </MenuItem>
+              ))}
+            </TextField>
 
-          <TextField
-            select
-            label="Jumlah Soal"
-            value={questionCount}
-            onChange={(e) => setQuestionCount(Number(e.target.value))}
-          >
-            {[5, 10, 15, 20].map((n) => (
-              <MenuItem key={n} value={n}>
-                {n} soal
-              </MenuItem>
-            ))}
-          </TextField>
+            <TextField
+              select
+              label="Mata Pelajaran"
+              value={subjectId}
+              disabled={!gradeId}
+              onChange={(e) => setSubjectId(e.target.value)}
+            >
+              {(subjectsQuery.data ?? []).map((s) => (
+                <MenuItem key={s.id} value={s.id}>
+                  {s.name}
+                </MenuItem>
+              ))}
+            </TextField>
 
-          <Button
-            variant="contained"
-            size="large"
-            disabled={!canCreate || submitting}
-            onClick={handleCreate}
-          >
-            {submitting ? 'Membuat…' : 'Mulai Latihan'}
-          </Button>
-        </Stack>
-      </Paper>
+            <TextField
+              select
+              label="Jumlah Soal"
+              value={questionCount}
+              onChange={(e) => setQuestionCount(Number(e.target.value))}
+            >
+              {[5, 10, 15, 20].map((n) => (
+                <MenuItem key={n} value={n}>
+                  {n} soal
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Button
+        variant="contained"
+        size="large"
+        fullWidth
+        disabled={!canCreate || submitting}
+        onClick={handleCreate}
+        sx={{ py: 1.5, fontWeight: 800, borderRadius: 2 }}
+      >
+        {submitting ? 'Membuat…' : canCreate ? '🚀 Mulai Latihan' : 'Lengkapi pilihan di atas'}
+      </Button>
     </Box>
   );
 }

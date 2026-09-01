@@ -3,13 +3,16 @@
 import type { PaymentDetail } from 'src/lib/api/billing';
 
 import { useState, useEffect } from 'react';
+import { varAlpha } from 'minimal-shared/utils';
 import { useSearchParams } from 'next/navigation';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Chip from '@mui/material/Chip';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
 
@@ -29,6 +32,7 @@ const fmt = (n: number) => n.toLocaleString('id-ID');
 const fmtDate = (s?: string | null) => (s ? new Date(s).toLocaleString('id-ID') : '—');
 
 export function PaymentsResultView() {
+  const theme = useTheme();
   const searchParams = useSearchParams();
   const paymentId = searchParams.get('paymentId') ?? '';
   const [payment, setPayment] = useState<PaymentDetail | null>(null);
@@ -72,37 +76,84 @@ export function PaymentsResultView() {
   if (!paymentId) {
     return (
       <Box sx={{ maxWidth: 560, mx: 'auto', px: 3, py: 10, textAlign: 'center' }}>
-        <Alert severity="warning">ID transaksi tidak ditemukan.</Alert>
+        <Alert severity="warning" sx={{ borderRadius: 2 }}>
+          ID transaksi tidak ditemukan.
+        </Alert>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: 560, mx: 'auto', px: 3, py: 10 }}>
-      <Typography variant="h4" sx={{ mb: 3, textAlign: 'center' }}>
-        Status Pembayaran
-      </Typography>
+    <Box sx={{ maxWidth: 560, mx: 'auto', px: 3, py: 5 }}>
+      {/* Header */}
+      <Box
+        sx={{
+          borderRadius: 3,
+          p: { xs: 3, md: 4 },
+          mb: 4,
+          textAlign: 'center',
+          color: '#fff',
+          ...theme.mixins.bgGradient({
+            images: [
+              `linear-gradient(135deg, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.92)}, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.85)} 55%, ${varAlpha(theme.vars.palette.secondary.mainChannel, 0.75)})`,
+            ],
+          }),
+        }}
+      >
+        <Typography variant="h4" sx={{ fontWeight: 800 }}>
+          Status Pembayaran
+        </Typography>
+      </Box>
 
       {error && (
-        <Alert severity="warning" sx={{ mb: 3 }}>
+        <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
           {error}
         </Alert>
       )}
 
       {!payment && !error && (
-        <Alert severity="info" sx={{ mb: 3 }}>
+        <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
           Pembayaran sedang diverifikasi… Entitlement aktif hanya setelah konfirmasi webhook.
         </Alert>
       )}
 
       {payment && (
-        <Card>
-          <CardContent>
-            <Typography variant="overline" color="primary">
-              Receipt / Invoice
-            </Typography>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.16)}`,
+            background: `linear-gradient(135deg, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.05)}, rgba(255,255,255,0))`,
+          }}
+        >
+          <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 1,
+              }}
+            >
+              <Typography variant="overline" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                Receipt / Invoice
+              </Typography>
+              <Chip
+                size="small"
+                label={payment.status}
+                variant="soft"
+                color={
+                  payment.status === 'paid'
+                    ? 'success'
+                    : payment.status === 'pending'
+                      ? 'warning'
+                      : 'default'
+                }
+              />
+            </Box>
+            <Divider sx={{ my: 2 }} />
             <Box sx={{ my: 2 }}>
-              <Typography variant="h5">
+              <Typography variant="h5" sx={{ fontWeight: 800 }}>
                 {payment.currency} {fmt(payment.amount)}
               </Typography>
               <Typography color="text.secondary">{payment.plan?.name ?? 'Paket'}</Typography>
@@ -134,7 +185,9 @@ export function PaymentsResultView() {
 
       <Box sx={{ mt: 3, textAlign: 'center' }}>
         <RouterLink href={paths.payments.root}>
-          <Button variant="contained">Lihat Riwayat Pembayaran</Button>
+          <Button variant="contained" sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}>
+            Lihat Riwayat Pembayaran
+          </Button>
         </RouterLink>
       </Box>
     </Box>

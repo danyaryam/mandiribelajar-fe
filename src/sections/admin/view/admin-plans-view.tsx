@@ -4,6 +4,7 @@ import type { AdminPlan } from 'src/lib/api/admin';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { varAlpha } from 'minimal-shared/utils';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -18,6 +19,7 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TextField from '@mui/material/TextField';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -34,6 +36,7 @@ import { listAdminPlans, createAdminPlan, updateAdminPlan } from 'src/lib/api/ad
 // ----------------------------------------------------------------------
 
 export function AdminPlansView() {
+  const theme = useTheme();
   const router = useRouter();
   const [plans, setPlans] = useState<AdminPlan[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -77,44 +80,99 @@ export function AdminPlansView() {
   };
 
   return (
-    <Box sx={{ maxWidth: 960, mx: 'auto', px: 3, py: 8 }}>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4">Kelola Paket</Typography>
-        <Button variant="contained" onClick={() => setOpen(true)}>
-          + Paket Baru
-        </Button>
+    <Box sx={{ maxWidth: 960, mx: 'auto', px: 3, py: 5 }}>
+      {/* Header */}
+      <Box
+        sx={{
+          borderRadius: 3,
+          p: { xs: 3, md: 4 },
+          mb: 4,
+          color: '#fff',
+          ...theme.mixins.bgGradient({
+            images: [
+              `linear-gradient(135deg, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.92)}, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.85)} 55%, ${varAlpha(theme.vars.palette.secondary.mainChannel, 0.75)})`,
+            ],
+          }),
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800 }}>
+              Kelola Paket
+            </Typography>
+            <Typography sx={{ opacity: 0.92, mt: 0.5 }}>
+              Atur paket, kuota, dan status aktif.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            onClick={() => setOpen(true)}
+            sx={{
+              bgcolor: '#fff',
+              color: theme.vars.palette.primary.darker,
+              fontWeight: 800,
+              '&:hover': { bgcolor: (t) => varAlpha(t.vars.palette.common.whiteChannel, 0.9) },
+            }}
+          >
+            + Paket Baru
+          </Button>
+        </Box>
       </Box>
 
       {error && (
-        <Alert severity="warning" sx={{ mb: 3 }}>
+        <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
           {error}
         </Alert>
       )}
 
       {loading && <Typography color="text.secondary">Memuat…</Typography>}
 
-      <Card>
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.16)}`,
+          overflow: 'hidden',
+        }}
+      >
         <Table>
           <TableHead>
-            <TableRow>
-              <TableCell>Paket</TableCell>
-              <TableCell>Harga</TableCell>
-              <TableCell>Kuota</TableCell>
-              <TableCell>Periode</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell align="right">Aksi</TableCell>
+            <TableRow sx={{ bgcolor: (t) => varAlpha(t.vars.palette.primary.mainChannel, 0.08) }}>
+              <TableCell sx={{ fontWeight: 800 }}>Paket</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Harga</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Kuota</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Periode</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Status</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 800 }}>
+                Aksi
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {plans.map((plan) => (
-              <TableRow key={plan.id}>
+              <TableRow
+                key={plan.id}
+                hover
+                sx={{
+                  borderBottom: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.12)}`,
+                  '&:last-of-type': { borderBottom: 'none' },
+                }}
+              >
                 <TableCell>
-                  <Typography sx={{ fontWeight: 600 }}>{plan.name}</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>{plan.name}</Typography>
                   <Typography variant="body2" color="text.secondary">
                     {plan.slug}
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>
                   {plan.amount > 0 ? `${plan.currency} ${plan.amount}` : 'Gratis'}
                 </TableCell>
                 <TableCell>{plan.quota}</TableCell>
@@ -122,12 +180,18 @@ export function AdminPlansView() {
                 <TableCell>
                   <Chip
                     size="small"
+                    variant="soft"
                     color={plan.isActive ? 'success' : 'default'}
                     label={plan.isActive ? 'Aktif' : 'Non-aktif'}
                   />
                 </TableCell>
                 <TableCell align="right">
-                  <Button size="small" onClick={() => handleToggleActive(plan)}>
+                  <Button
+                    size="small"
+                    color={plan.isActive ? 'error' : 'primary'}
+                    sx={{ borderRadius: 2, fontWeight: 700 }}
+                    onClick={() => handleToggleActive(plan)}
+                  >
                     {plan.isActive ? 'Nonaktifkan' : 'Aktifkan'}
                   </Button>
                 </TableCell>
@@ -138,7 +202,7 @@ export function AdminPlansView() {
       </Card>
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Paket Baru</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Paket Baru</DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
             <TextField

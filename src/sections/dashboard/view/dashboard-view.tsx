@@ -4,6 +4,7 @@ import type { Dashboard } from 'src/lib/api/me';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { varAlpha } from 'minimal-shared/utils';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -11,8 +12,10 @@ import Grid from '@mui/material/Grid';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
+import LinearProgress from '@mui/material/LinearProgress';
 
 import { paths } from 'src/routes/paths';
 
@@ -24,7 +27,40 @@ import { getAccessToken } from 'src/lib/api/auth';
 // Dashboard siswa (Fase 5): ringkasan progres, latihan terakhir, kuota.
 // ----------------------------------------------------------------------
 
+const STAT_ICONS: Record<string, string> = {
+  'Nilai Rata-rata': '🎯',
+  'Latihan Selesai': '📚',
+  'Streak (hari)': '🔥',
+  'Target Mingguan': '⏱️',
+};
+
+type Stat = { label: string; value: string };
+
+function StatCard({ label, value, accent }: Stat & { accent: string }) {
+  return (
+    <Card
+      sx={{
+        height: '100%',
+        border: `solid 1px ${varAlpha(accent, 0.18)}`,
+        background: `linear-gradient(135deg, ${varAlpha(accent, 0.08)}, rgba(255,255,255,0))`,
+        transition: 'transform .18s, box-shadow .18s',
+        '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 10px 28px rgba(0,0,0,.10)' },
+      }}
+    >
+      <CardContent>
+        <Typography variant="overline" sx={{ color: accent, fontWeight: 700 }}>
+          {STAT_ICONS[label] ?? '•'} {label}
+        </Typography>
+        <Typography variant="h3" sx={{ my: 0.5, fontWeight: 800 }}>
+          {value}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function DashboardView() {
+  const theme = useTheme();
   const router = useRouter();
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +98,7 @@ export function DashboardView() {
     );
   }
 
-  const statCards = [
+  const stats: Stat[] = [
     {
       label: 'Nilai Rata-rata',
       value: dashboard.averageScore != null ? `${dashboard.averageScore}%` : '—',
@@ -75,88 +111,154 @@ export function DashboardView() {
     },
   ];
 
+  const weeklyGoal = dashboard.weeklyGoal ?? 3;
+  const weeklyPct = Math.min(
+    100,
+    Math.round(((dashboard.weeklyCompleted ?? 0) / weeklyGoal) * 100)
+  );
+  const accents = [
+    theme.vars.palette.primary.main,
+    theme.vars.palette.info.main,
+    theme.vars.palette.warning.main,
+    theme.vars.palette.secondary.main,
+  ];
+
   return (
-    <Box sx={{ maxWidth: 960, mx: 'auto', px: 3, py: 8 }}>
+    <Box sx={{ maxWidth: 1080, mx: 'auto', px: 3, py: 5 }}>
+      {/* Hero banner */}
       <Box
         sx={{
+          borderRadius: 3,
+          p: { xs: 3, md: 5 },
           mb: 4,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 2,
+          color: '#fff',
+          ...theme.mixins.bgGradient({
+            images: [
+              `linear-gradient(135deg, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.92)}, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.85)} 55%, ${varAlpha(theme.vars.palette.secondary.mainChannel, 0.75)})`,
+            ],
+          }),
         }}
       >
-        <Typography variant="h4">Dashboard</Typography>
-        <Button variant="contained" component="a" href={paths.courses.configure}>
-          + Latihan Baru
-        </Button>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={3}
+          sx={{ alignItems: { md: 'center' }, justifyContent: 'space-between' }}
+        >
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+              Halo, semangat belajar! 👋
+            </Typography>
+            <Typography sx={{ opacity: 0.92, maxWidth: 520 }}>
+              Lanjutkan rutinitas belajarmu. Selesaikan target mingguan dan jaga semangatmu hari
+              ini.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="large"
+            component="a"
+            href={paths.courses.configure}
+            sx={{
+              bgcolor: '#fff',
+              color: theme.vars.palette.primary.darker,
+              fontWeight: 800,
+              '&:hover': { bgcolor: (t) => varAlpha(t.vars.palette.common.whiteChannel, 0.9) },
+            }}
+          >
+            + Mulai Latihan
+          </Button>
+        </Stack>
+        {/* Weekly goal progress */}
+        <Box sx={{ mt: 3, maxWidth: 420 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              Target mingguan
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              {dashboard.weeklyCompleted ?? 0}/{weeklyGoal}
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={weeklyPct}
+            sx={{
+              height: 8,
+              borderRadius: 4,
+              bgcolor: 'rgba(255,255,255,.25)',
+              '& .MuiLinearProgress-bar': { bgcolor: '#fff', borderRadius: 4 },
+            }}
+          />
+        </Box>
       </Box>
 
-      <Grid container spacing={2} sx={{ mb: 5 }}>
-        {statCards.map((s) => (
+      {/* Stat cards */}
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        {stats.map((s, i) => (
           <Grid key={s.label} size={{ xs: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h4" sx={{ mb: 0.5 }}>
-                  {s.value}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {s.label}
-                </Typography>
-              </CardContent>
-            </Card>
+            <StatCard
+              {...s}
+              accent={accents[i % accents.length] ?? theme.vars.palette.primary.main}
+            />
           </Grid>
         ))}
       </Grid>
 
+      {/* Achievements */}
       {dashboard.achievements.length > 0 && (
         <>
-          <Typography variant="h6" sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
             Pencapaian
           </Typography>
-          <Stack spacing={1} sx={{ mb: 4 }}>
+          <Grid container spacing={1.5} sx={{ mb: 4 }}>
             {dashboard.achievements.map((a) => (
-              <Card key={a.code}>
-                <CardContent
+              <Grid key={a.code} size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card
                   sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 2,
-                    opacity: a.earned ? 1 : 0.5,
+                    border: `solid 1px ${a.earned ? varAlpha(theme.vars.palette.success.mainChannel, 0.3) : 'rgba(0,0,0,.06)'}`,
+                    background: a.earned
+                      ? `linear-gradient(135deg, ${varAlpha(theme.vars.palette.success.mainChannel, 0.12)}, rgba(255,255,255,0))`
+                      : undefined,
+                    height: '100%',
                   }}
                 >
-                  <Box>
-                    <Typography sx={{ fontWeight: 600 }}>{a.name}</Typography>
+                  <CardContent>
+                    <Typography sx={{ fontSize: 28 }}>{a.earned ? '🏆' : '🔒'}</Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mt: 1 }}>
+                      {a.name}
+                    </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {a.description}
                     </Typography>
-                  </Box>
-                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                    {a.earned ? '✔' : '🔒'}
-                  </Typography>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Grid>
             ))}
-          </Stack>
+          </Grid>
         </>
       )}
 
-      <Typography variant="h6" sx={{ mb: 2 }}>
+      {/* Recent sessions */}
+      <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
         Latihan Terakhir
       </Typography>
-
       {dashboard.recentSessions.length === 0 ? (
-        <Typography color="text.secondary">
-          Belum ada latihan. Mulai latihan pertamamu sekarang.
-        </Typography>
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 5 }}>
+            <Typography sx={{ fontSize: 40 }}>🧘</Typography>
+            <Typography color="text.secondary">
+              Belum ada latihan. Mulai latihan pertamamu sekarang.
+            </Typography>
+            <Button variant="contained" component="a" href={paths.courses.configure} sx={{ mt: 2 }}>
+              Mulai Latihan
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <Stack spacing={1.5}>
           {dashboard.recentSessions.map((s) => {
             const pct = s.maxScore ? Math.round(((s.score ?? 0) / s.maxScore) * 100) : null;
             return (
-              <Card key={s.id}>
+              <Card key={s.id} sx={{ borderRadius: 2.5 }}>
                 <CardContent
                   sx={{
                     display: 'flex',
@@ -166,12 +268,23 @@ export function DashboardView() {
                   }}
                 >
                   <Box>
-                    <Typography sx={{ fontWeight: 600 }}>{s.title || 'Latihan'}</Typography>
+                    <Typography sx={{ fontWeight: 700 }}>{s.title || 'Latihan'}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       {s.status}
                     </Typography>
                   </Box>
-                  {pct != null && <Typography variant="h6">{pct}%</Typography>}
+                  {pct != null && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={pct}
+                        sx={{ width: { xs: 80, sm: 140 }, height: 8, borderRadius: 4 }}
+                      />
+                      <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                        {pct}%
+                      </Typography>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -179,38 +292,46 @@ export function DashboardView() {
         </Stack>
       )}
 
+      {/* Weak topics / recommendations */}
       {(dashboard.weakTopics.length > 0 || dashboard.recommendations.length > 0) && (
         <>
-          <Typography variant="h6" sx={{ mt: 5, mb: 2 }}>
+          <Typography variant="h6" sx={{ mt: 5, mb: 2, fontWeight: 700 }}>
             Topik yang Perlu Diulang
           </Typography>
-
           <Stack spacing={1.5}>
             {dashboard.recommendations.map((r) => (
-              <Alert key={r.topicId} severity="info" sx={{ alignItems: 'center' }}>
+              <Alert key={r.topicId} severity="info" sx={{ alignItems: 'center', borderRadius: 2 }}>
                 {r.reason}
               </Alert>
             ))}
-          </Stack>
-
-          <Stack spacing={1.5} sx={{ mt: 2 }}>
-            {dashboard.weakTopics.map((t) => (
-              <Card key={t.topicId}>
-                <CardContent
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 2,
-                  }}
-                >
-                  <Typography sx={{ fontWeight: 600 }}>{t.topicName || 'Topik'}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Nilai {t.score}%
-                  </Typography>
-                </CardContent>
-              </Card>
-            ))}
+            {dashboard.weakTopics.map((t) => {
+              const color = t.score < 50 ? 'error' : t.score < 70 ? 'warning' : 'success';
+              return (
+                <Card key={t.topicId} sx={{ borderRadius: 2.5 }}>
+                  <CardContent
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: 2,
+                    }}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 600 }}>{t.topicName || 'Topik'}</Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={t.score}
+                        color={color}
+                        sx={{ mt: 1, height: 6, borderRadius: 4 }}
+                      />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: `${color}.main` }}>
+                      {t.score}%
+                    </Typography>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </Stack>
         </>
       )}
