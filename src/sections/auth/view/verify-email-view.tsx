@@ -24,20 +24,20 @@ import { confirmEmailVerification } from 'src/lib/api/auth';
 // Token diterima dari link email (query param `token`).
 // ----------------------------------------------------------------------
 
-type Status = 'loading' | 'verified' | 'error';
+type Status = 'pending' | 'loading' | 'verified' | 'error';
 
 export function VerifyEmailView() {
   const theme = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token') ?? '';
-  const [status, setStatus] = useState<Status>('loading');
+  const email = searchParams.get('email') ?? '';
+  const [status, setStatus] = useState<Status>(token ? 'loading' : 'pending');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
-      setError('Tautan verifikasi tidak valid.');
-      setStatus('error');
+      setStatus('pending');
       return;
     }
     confirmEmailVerification(token)
@@ -88,6 +88,24 @@ export function VerifyEmailView() {
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
           Verifikasi Email
         </Typography>
+
+        {status === 'pending' && (
+          <Stack spacing={2.5} sx={{ mt: 2 }}>
+            <Typography sx={{ fontSize: 48 }}>📧</Typography>
+            <Alert severity="info" sx={{ borderRadius: 2 }}>
+              Tautan verifikasi telah dikirim ke {email || 'email Anda'}. Periksa kotak masuk dan
+              folder spam.
+            </Alert>
+            <Link
+              component={RouterLink}
+              href={paths.auth.login}
+              variant="body2"
+              sx={{ fontWeight: 700 }}
+            >
+              Kembali ke halaman masuk
+            </Link>
+          </Stack>
+        )}
 
         {status === 'loading' && (
           <Stack spacing={2} sx={{ alignItems: 'center' }}>

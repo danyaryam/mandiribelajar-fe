@@ -26,6 +26,13 @@ export const loginResponseSchema = z.object({
 
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 
+const pendingRegistrationSchema = z.object({
+  requiresEmailVerification: z.literal(true),
+  user: userSchema,
+});
+
+export type RegisterResponse = LoginResponse | z.infer<typeof pendingRegistrationSchema>;
+
 export const registerRequestSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
@@ -43,6 +50,7 @@ export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 // Simple in-memory token holder. In a fuller implementation this ties into
 // an httpOnly refresh cookie + a coordinated refresh-on-401 interceptor.
 let accessToken: string | null = null;
+let refreshPromise: Promise<string> | null = null;
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
@@ -66,18 +74,34 @@ export async function login(email: string, password: string): Promise<LoginRespo
   return parsed;
 }
 
-export async function register(payload: RegisterRequest) {
+export async function register(payload: RegisterRequest): Promise<RegisterResponse> {
   const { data } = await apiFetch<unknown>(endpoints.auth.register, {
     method: 'post',
     body: payload,
   });
-  return loginResponseSchema.parse(data);
+  const parsed = z.union([loginResponseSchema, pendingRegistrationSchema]).parse(data);
+  if ('accessToken' in parsed) setAccessToken(parsed.accessToken);
+  return parsed;
 }
 
-export async function logout(refreshToken: string) {
+export function refreshSession(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = apiFetch<unknown>(endpoints.auth.refresh, { method: 'post' })
+      .then(({ data }) => {
+        const parsed = z.object({ accessToken: z.string() }).parse(data);
+        setAccessToken(parsed.accessToken);
+        return parsed.accessToken;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+export async function logout() {
   await apiFetch<unknown>(endpoints.auth.logout, {
     method: 'post',
-    body: { refreshToken },
   });
   setAccessToken(null);
 }

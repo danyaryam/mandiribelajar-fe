@@ -9,7 +9,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 import { paths } from 'src/routes/paths';
 
-import { getAccessToken } from 'src/lib/api/auth';
+import { getAccessToken, refreshSession } from 'src/lib/api/auth';
 
 // ----------------------------------------------------------------------
 // Route guard untuk area yang memerlukan login (Fase 1, §5 proteksi route).
@@ -28,12 +28,24 @@ export function RouteGuard({ children }: Props) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!getAccessToken()) {
-      const returnTo = encodeURIComponent(pathname);
-      router.replace(`${paths.auth.login}?returnTo=${returnTo}`);
-      return;
+    let active = true;
+
+    async function restoreSession() {
+      try {
+        if (!getAccessToken()) await refreshSession();
+        if (active) setReady(true);
+      } catch {
+        if (active) {
+          const returnTo = encodeURIComponent(pathname);
+          router.replace(`${paths.auth.login}?returnTo=${returnTo}`);
+        }
+      }
     }
-    setReady(true);
+
+    void restoreSession();
+    return () => {
+      active = false;
+    };
   }, [pathname, router]);
 
   if (!ready) {

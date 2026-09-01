@@ -27,9 +27,16 @@ export type ApiMeta = {
 
 export type ApiEnvelope<T> = {
   data: T;
-  message: string;
+  message?: string;
   meta?: ApiMeta;
   errors?: Record<string, string[]> | null;
+};
+
+type ContractErrorEnvelope = {
+  error?: {
+    message?: string;
+    fields?: Record<string, string[]>;
+  };
 };
 
 export class ApiError extends Error {
@@ -74,6 +81,7 @@ function getBaseUrl() {
 export const api = ky.create({
   baseUrl: getBaseUrl(),
   timeout: 10_000,
+  credentials: 'include',
   // Pembagian peran retry: ky me-retry di level TRANSPORT (network error /
   // 408/413/429/5xx) hanya untuk GET yang idempoten; retry level QUERY di
   // browser adalah urusan TanStack Query (default 3x). Default ky ikut
@@ -137,12 +145,14 @@ export async function apiFetch<T>(
     }).json();
   } catch (error) {
     if (error instanceof HTTPError) {
-      const payload = (await error.response.json().catch(() => null)) as ApiEnvelope<null> | null;
+      const payload = (await error.response.json().catch(() => null)) as
+        | (ApiEnvelope<null> & ContractErrorEnvelope)
+        | null;
 
       throw new ApiError(
         error.response.status,
-        payload?.message || error.message,
-        payload?.errors ?? null
+        payload?.error?.message || payload?.message || error.message,
+        payload?.error?.fields ?? payload?.errors ?? null
       );
     }
 

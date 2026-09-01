@@ -33,7 +33,7 @@ const loginSchema = z.object({
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, 'Minimal 2 karakter.'),
+    name: z.string().min(2, 'Minimal 2 karakter.').max(100, 'Maksimal 100 karakter.'),
     email: z.string().email('Format email tidak valid.'),
     password: z.string().min(8, 'Minimal 8 karakter.'),
     confirmPassword: z.string().min(8, 'Minimal 8 karakter.'),
@@ -89,14 +89,20 @@ export function AuthView({ mode }: Props) {
         await login(values.email, values.password);
       } else {
         const v = values as unknown as RegisterValues;
-        await register({
+        const result = await register({
           name: v.name,
           email: v.email,
           password: v.password,
           acceptedTermsVersion: '2026-08-01',
         });
+        if ('requiresEmailVerification' in result) {
+          router.push(`${paths.auth.verifyEmail}?email=${encodeURIComponent(v.email)}`);
+          return;
+        }
       }
-      router.push(returnTo ? decodeURIComponent(returnTo) : paths.dashboard);
+      const destination =
+        returnTo?.startsWith('/') && !returnTo.startsWith('//') ? returnTo : paths.dashboard;
+      router.push(destination);
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Terjadi kesalahan. Coba lagi.');
