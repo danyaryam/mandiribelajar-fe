@@ -80,7 +80,7 @@ function getBaseUrl() {
  */
 export const api = ky.create({
   baseUrl: getBaseUrl(),
-  timeout: 10_000,
+  timeout: 60_000,
   credentials: 'include',
   // Pembagian peran retry: ky me-retry di level TRANSPORT (network error /
   // 408/413/429/5xx) hanya untuk GET yang idempoten; retry level QUERY di
