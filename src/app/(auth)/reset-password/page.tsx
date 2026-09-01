@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { Suspense } from 'react';
+
 import { ResetPasswordView } from 'src/sections/auth/view/reset-password-view';
 
 export const metadata: Metadata = {
@@ -8,5 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default function ResetPasswordPage() {
-  return <ResetPasswordView />;
+  return (
+    <Suspense>
+      <ResetPasswordView />
+    </Suspense>
+  );
 }

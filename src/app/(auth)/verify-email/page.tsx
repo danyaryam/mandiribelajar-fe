@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { Suspense } from 'react';
+
 import { VerifyEmailView } from 'src/sections/auth/view/verify-email-view';
 
 export const metadata: Metadata = {
@@ -8,5 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default function VerifyEmailPage() {
-  return <VerifyEmailView />;
+  return (
+    <Suspense>
+      <VerifyEmailView />
+    </Suspense>
+  );
 }

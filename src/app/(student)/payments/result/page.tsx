@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { Suspense } from 'react';
+
 import { PaymentsResultView } from 'src/sections/payments/view/payments-result-view';
 
 export const metadata: Metadata = {
@@ -7,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function PaymentsResultPage() {
-  return <PaymentsResultView />;
+  return (
+    <Suspense>
+      <PaymentsResultView />
+    </Suspense>
+  );
 }

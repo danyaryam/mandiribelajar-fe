@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { Suspense } from 'react';
+
 import { AuthView } from 'src/sections/auth/view/auth-view';
 
 // ----------------------------------------------------------------------
@@ -10,5 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  return <AuthView mode="login" />;
+  return (
+    <Suspense>
+      <AuthView mode="login" />
+    </Suspense>
+  );
 }
