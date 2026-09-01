@@ -39,7 +39,10 @@ export function PracticeConfigureView() {
 
   const levelsQuery = useEducationLevelsQuery();
   const gradesQuery = useGradesByLevelQuery(levelId || undefined);
-  const subjectsQuery = useSubjectsQuery({ levelId: levelId || undefined, gradeId: gradeId || undefined });
+  const subjectsQuery = useSubjectsQuery({
+    levelId: levelId || undefined,
+    gradeId: gradeId || undefined,
+  });
 
   const canCreate = levelId && gradeId && subjectId;
 
@@ -152,7 +155,12 @@ export function PracticeConfigureView() {
             ))}
           </TextField>
 
-          <Button variant="contained" size="large" disabled={!canCreate || submitting} onClick={handleCreate}>
+          <Button
+            variant="contained"
+            size="large"
+            disabled={!canCreate || submitting}
+            onClick={handleCreate}
+          >
             {submitting ? 'Membuat…' : 'Mulai Latihan'}
           </Button>
         </Stack>

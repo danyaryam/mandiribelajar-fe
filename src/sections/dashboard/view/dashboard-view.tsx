@@ -1,24 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import type { Dashboard } from 'src/lib/api/me';
 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import Box from '@mui/material/Box';
-import Alert from '@mui/material/Alert';
-import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Grid from '@mui/material/Grid';
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import CardContent from '@mui/material/CardContent';
 
 import { paths } from 'src/routes/paths';
 
 import { ApiError } from 'src/lib/api/client';
-import { getAccessToken } from 'src/lib/api/auth';
-import type { Dashboard } from 'src/lib/api/me';
 import { getDashboard } from 'src/lib/api/me';
+import { getAccessToken } from 'src/lib/api/auth';
 
 // ----------------------------------------------------------------------
 // Dashboard siswa (Fase 5): ringkasan progres, latihan terakhir, kuota.
@@ -63,18 +63,30 @@ export function DashboardView() {
   }
 
   const statCards = [
-    { label: 'Nilai Rata-rata', value: dashboard.averageScore != null ? `${dashboard.averageScore}%` : '—' },
+    {
+      label: 'Nilai Rata-rata',
+      value: dashboard.averageScore != null ? `${dashboard.averageScore}%` : '—',
+    },
     { label: 'Latihan Selesai', value: String(dashboard.completedSessions) },
     { label: 'Streak (hari)', value: String(dashboard.currentStreakDays) },
     {
-      label: 'Kuota Terpakai',
-      value: dashboard.usageSummary ? `${dashboard.usageSummary.totalConsumed}` : '0',
+      label: 'Target Mingguan',
+      value: `${dashboard.weeklyCompleted ?? 0}/${dashboard.weeklyGoal ?? 3}`,
     },
   ];
 
   return (
     <Box sx={{ maxWidth: 960, mx: 'auto', px: 3, py: 8 }}>
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+      <Box
+        sx={{
+          mb: 4,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 2,
+        }}
+      >
         <Typography variant="h4">Dashboard</Typography>
         <Button variant="contained" component="a" href={paths.courses.configure}>
           + Latihan Baru
@@ -98,6 +110,39 @@ export function DashboardView() {
         ))}
       </Grid>
 
+      {dashboard.achievements.length > 0 && (
+        <>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Pencapaian
+          </Typography>
+          <Stack spacing={1} sx={{ mb: 4 }}>
+            {dashboard.achievements.map((a) => (
+              <Card key={a.code}>
+                <CardContent
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 2,
+                    opacity: a.earned ? 1 : 0.5,
+                  }}
+                >
+                  <Box>
+                    <Typography sx={{ fontWeight: 600 }}>{a.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {a.description}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    {a.earned ? '✔' : '🔒'}
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))}
+          </Stack>
+        </>
+      )}
+
       <Typography variant="h6" sx={{ mb: 2 }}>
         Latihan Terakhir
       </Typography>
@@ -113,7 +158,12 @@ export function DashboardView() {
             return (
               <Card key={s.id}>
                 <CardContent
-                  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 2,
+                  }}
                 >
                   <Box>
                     <Typography sx={{ fontWeight: 600 }}>{s.title || 'Latihan'}</Typography>
@@ -127,6 +177,42 @@ export function DashboardView() {
             );
           })}
         </Stack>
+      )}
+
+      {(dashboard.weakTopics.length > 0 || dashboard.recommendations.length > 0) && (
+        <>
+          <Typography variant="h6" sx={{ mt: 5, mb: 2 }}>
+            Topik yang Perlu Diulang
+          </Typography>
+
+          <Stack spacing={1.5}>
+            {dashboard.recommendations.map((r) => (
+              <Alert key={r.topicId} severity="info" sx={{ alignItems: 'center' }}>
+                {r.reason}
+              </Alert>
+            ))}
+          </Stack>
+
+          <Stack spacing={1.5} sx={{ mt: 2 }}>
+            {dashboard.weakTopics.map((t) => (
+              <Card key={t.topicId}>
+                <CardContent
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 2,
+                  }}
+                >
+                  <Typography sx={{ fontWeight: 600 }}>{t.topicName || 'Topik'}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Nilai {t.score}%
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))}
+          </Stack>
+        </>
       )}
     </Box>
   );

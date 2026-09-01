@@ -78,7 +78,16 @@ export function LandingHero() {
             </Button>
           </Box>
 
-          <Box sx={{ mt: 6, gap: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              mt: 6,
+              gap: 4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
             {hero.stats.map((stat, index) => (
               <Box key={stat.label} sx={{ textAlign: 'center' }}>
                 <Typography component="span" variant="h3" sx={{ color: 'primary.main' }}>

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { endpoints } from './endpoints';
 import { getAccessToken } from './auth';
-import { ApiError , apiFetch } from './client';
+import { ApiError, apiFetch } from './client';
 
 // ----------------------------------------------------------------------
 // Schemas — mirror api-contract.md §7 (practice/course).
@@ -92,6 +92,9 @@ export const resultSchema = z.object({
   unansweredCount: z.number(),
   submittedAt: z.string(),
   answers: nullableList(resultAnswerSchema),
+  topicBreakdown: nullableList(
+    z.object({ topicId: z.string(), topicName: z.string(), score: z.number() })
+  ),
   recommendations: nullableList(z.object({ topicId: z.string(), reason: z.string() })),
 });
 
@@ -174,9 +177,100 @@ export async function submitSession(sessionId: string): Promise<void> {
   });
 }
 
+export const sessionHistorySchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  title: z.string(),
+  difficulty: z.string(),
+  score: z.number().nullable().optional(),
+  maxScore: z.number().nullable().optional(),
+  createdAt: z.string(),
+  submittedAt: z.string().nullable().optional(),
+});
+
+export type SessionHistoryItem = z.infer<typeof sessionHistorySchema>;
+
+export async function listSessions(): Promise<SessionHistoryItem[]> {
+  const { data } = await apiFetch<unknown>(endpoints.practiceSlots.list, {
+    headers: { Authorization: `Bearer ${ensureToken()}` },
+    next: { revalidate: 0 },
+  });
+  return nullableList(sessionHistorySchema).parse(data);
+}
+
+// ----------------------------------------------------------------------
+// A reusable idempotency-key for a single user action (optional).
+// ----------------------------------------------------------------------
+
+let _idemKey: string | null = null;
+
+export function generateIdempotencyKey(): string {
+  if (!_idemKey) {
+    _idemKey =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `idem-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+  return _idemKey;
+}
+
 export async function getResult(sessionId: string): Promise<PracticeResult> {
   const { data } = await apiFetch<unknown>(endpoints.practiceSlots.result(sessionId), {
     headers: { Authorization: `Bearer ${ensureToken()}` },
   });
   return resultSchema.parse(data);
+}
+
+// ----------------------------------------------------------------------
+// Bookmark ("pelajari lagi") dan laporan kualitas soal.
+// ----------------------------------------------------------------------
+
+export const bookmarkItemSchema = z.object({
+  questionId: z.string(),
+  type: z.string(),
+  prompt: z.string(),
+  subjectId: z.string(),
+  createdAt: z.string(),
+});
+
+export type BookmarkItem = z.infer<typeof bookmarkItemSchema>;
+
+export async function listBookmarks(): Promise<BookmarkItem[]> {
+  const { data } = await apiFetch<unknown>(endpoints.questions.bookmarks, {
+    headers: { Authorization: `Bearer ${ensureToken()}` },
+    next: { revalidate: 0 },
+  });
+  return nullableList(bookmarkItemSchema).parse(data);
+}
+
+export async function addBookmark(questionId: string): Promise<void> {
+  await apiFetch<unknown>(endpoints.questions.bookmark(questionId), {
+    method: 'post',
+    headers: { Authorization: `Bearer ${ensureToken()}` },
+  });
+}
+
+export async function removeBookmark(questionId: string): Promise<void> {
+  await apiFetch<unknown>(endpoints.questions.bookmark(questionId), {
+    method: 'delete',
+    headers: { Authorization: `Bearer ${ensureToken()}` },
+  });
+}
+
+export const questionReportSchema = z.object({
+  reason: z.string(),
+  note: z.string().optional(),
+});
+
+export async function reportQuestion(
+  sessionId: string,
+  questionId: string,
+  reason: string,
+  note?: string
+): Promise<void> {
+  await apiFetch<unknown>(endpoints.practiceSlots.report(sessionId, questionId), {
+    method: 'post',
+    headers: { Authorization: `Bearer ${ensureToken()}` },
+    body: { reason, note },
+  });
 }

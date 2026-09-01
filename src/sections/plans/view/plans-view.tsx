@@ -1,26 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import type { Plan } from 'src/lib/api/billing';
 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import Box from '@mui/material/Box';
-import Alert from '@mui/material/Alert';
-import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
+import CardContent from '@mui/material/CardContent';
 
 import { paths } from 'src/routes/paths';
-import { Iconify } from 'src/components/iconify';
 
 import { ApiError } from 'src/lib/api/client';
 import { getAccessToken } from 'src/lib/api/auth';
-import type { Plan } from 'src/lib/api/billing';
 import { getPlans, checkout } from 'src/lib/api/billing';
+
+import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 // Halaman paket harga (Fase 6). Plan publik; checkout butuh login.
@@ -85,9 +86,7 @@ export function PlansView() {
                   {plan.name}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                  <Typography variant="h3">
-                    Rp {plan.amount.toLocaleString('id-ID')}
-                  </Typography>
+                  <Typography variant="h3">Rp {plan.amount.toLocaleString('id-ID')}</Typography>
                   <Typography color="text.secondary">/ {plan.period}</Typography>
                 </Box>
                 <Typography variant="body2" color="text.secondary">
@@ -97,7 +96,11 @@ export function PlansView() {
                 <Stack spacing={1}>
                   {plan.features.map((f) => (
                     <Stack key={f} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                      <Iconify icon="eva:checkmark-fill" width={18} sx={{ color: 'primary.main' }} />
+                      <Iconify
+                        icon="eva:checkmark-fill"
+                        width={18}
+                        sx={{ color: 'primary.main' }}
+                      />
                       <Typography variant="body2">{f}</Typography>
                     </Stack>
                   ))}
@@ -110,7 +113,11 @@ export function PlansView() {
                     disabled={checking === plan.id}
                     onClick={() => handleCheckout(plan)}
                   >
-                    {checking === plan.id ? 'Memproses…' : plan.amount === 0 ? 'Gratis' : 'Pilih Paket'}
+                    {checking === plan.id
+                      ? 'Memproses…'
+                      : plan.amount === 0
+                        ? 'Gratis'
+                        : 'Pilih Paket'}
                   </Button>
                 </Box>
               </CardContent>

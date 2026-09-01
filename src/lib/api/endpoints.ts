@@ -36,6 +36,10 @@ export const endpoints = {
     refresh: 'api/v1/auth/refresh',
     logout: 'api/v1/auth/logout',
     me: 'api/v1/me',
+    requestEmailVerification: 'api/v1/auth/email/verify/request',
+    confirmEmailVerification: 'api/v1/auth/email/verify/confirm',
+    forgotPassword: 'api/v1/auth/password/forgot',
+    resetPassword: 'api/v1/auth/password/reset',
   },
 
   // Mandiri Belajar practice (api-contract.md §7) — base /api/v1.
@@ -49,12 +53,22 @@ export const endpoints = {
       `api/v1/practice-sessions/${sessionId}/answers/${questionId}`,
     submit: (sessionId: string) => `api/v1/practice-sessions/${sessionId}/submit`,
     result: (sessionId: string) => `api/v1/practice-sessions/${sessionId}/result`,
+    report: (sessionId: string, questionId: string) =>
+      `api/v1/practice-sessions/${sessionId}/questions/${questionId}/reports`,
+  },
+
+  // Bookmark ("pelajari lagi") — base /api/v1.
+  questions: {
+    bookmarks: 'api/v1/questions/bookmarks',
+    bookmark: (questionId: string) => `api/v1/questions/${encodeURIComponent(questionId)}/bookmark`,
   },
 
   // Mandiri Belajar me (api-contract.md §5) — base /api/v1.
   me: {
+    update: 'api/v1/me',
     dashboard: 'api/v1/me/dashboard',
     usage: 'api/v1/me/usage',
+    progress: 'api/v1/me/progress',
   },
 
   // Mandiri Belajar billing (api-contract.md §8) — base /api/v1.
@@ -64,5 +78,20 @@ export const endpoints = {
     payments: 'api/v1/payments',
     paymentDetails: (paymentId: string) => `api/v1/payments/${paymentId}`,
     webhook: (provider: string) => `api/v1/webhooks/payments/${provider}`,
+  },
+
+  // Mandiri Belajar admin (api-contract.md §9) — base /api/v1.
+  admin: {
+    aiGenerations: 'api/v1/admin/ai-generations',
+    questionReports: 'api/v1/admin/question-reports',
+    questionReport: (id: string) => `api/v1/admin/question-reports/${encodeURIComponent(id)}`,
+    plans: 'api/v1/admin/plans',
+    plan: (id: string) => `api/v1/admin/plans/${encodeURIComponent(id)}`,
+    payments: 'api/v1/admin/payments',
+    levels: 'api/v1/admin/levels',
+    grades: 'api/v1/admin/grades',
+    subjects: 'api/v1/admin/subjects',
+    subject: (id: string) => `api/v1/admin/subjects/${encodeURIComponent(id)}`,
+    topics: 'api/v1/admin/topics',
   },
 };

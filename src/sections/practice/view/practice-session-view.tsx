@@ -20,10 +20,17 @@ import { paths } from 'src/routes/paths';
 
 import { ApiError } from 'src/lib/api/client';
 import { getAccessToken } from 'src/lib/api/auth';
-import { getSession, saveAnswer, submitSession } from 'src/lib/api/practice';
+import {
+  getSession,
+  saveAnswer,
+  startSession,
+  submitSession,
+  getSessionStatus,
+} from 'src/lib/api/practice';
 
 // ----------------------------------------------------------------------
 // Halaman pengerjaan soal. Jawaban di-autosave; submit mengunci & menilai.
+// Sesi yang masih 'generating' dipolling sampai 'ready' (Fase 4 async).
 // ----------------------------------------------------------------------
 
 type Props = {
@@ -36,26 +43,90 @@ export function PracticeSessionView({ sessionId }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
-  const [drafts, setDrafts] = useState<Record<string, { selectedOptionId?: string; text?: string }>>({});
+  const [drafts, setDrafts] = useState<
+    Record<string, { selectedOptionId?: string; text?: string }>
+  >({});
   const [revision, setRevision] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const loadReadySession = (s: SessionDetail) => {
+      if (cancelled) return;
+      setSession(s);
+      const d: Record<string, { selectedOptionId?: string; text?: string }> = {};
+      s.questions.forEach((q) => {
+        d[q.id] = q.draftAnswer ?? {};
+      });
+      setDrafts(d);
+      setLoading(false);
+    };
+
     if (!getAccessToken()) {
       router.replace(paths.auth.login);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
+
+    const pollUntilReady = async () => {
+      try {
+        // Wait for the session to be 'ready' — for async generation,
+        // poll status every 2s per api-contract.md §7.
+        for (let i = 0; i < 60; i += 1) {
+          const status = await getSessionStatus(sessionId);
+          if (status.status === 'ready') {
+            await startSession(sessionId).catch(() => undefined);
+            const s = await getSession(sessionId);
+            loadReadySession(s);
+            return;
+          }
+          if (status.status === 'generation_failed' || status.status === 'expired') {
+            throw new ApiError(
+              422,
+              'Gagal menyiapkan soal. Silakan coba lagi dengan pilihan lain.'
+            );
+          }
+          // still generating / in_progress
+          if (status.status === 'in_progress') {
+            const s = await getSession(sessionId);
+            loadReadySession(s);
+            return;
+          }
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+        throw new ApiError(408, 'Waktu penyiapan soal habis. Silakan coba lagi.');
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof ApiError ? err.message : 'Gagal memuat latihan.');
+        setLoading(false);
+      }
+    };
+
     getSession(sessionId)
-      .then((s) => {
-        setSession(s);
-        const d: Record<string, { selectedOptionId?: string; text?: string }> = {};
-        s.questions.forEach((q) => {
-          d[q.id] = q.draftAnswer ?? {};
-        });
-        setDrafts(d);
+      .then(async (s) => {
+        if (s.status === 'generating') {
+          await pollUntilReady();
+        } else {
+          if (s.status === 'ready') {
+            await startSession(sessionId).catch(() => undefined);
+            const fresh = await getSession(sessionId);
+            loadReadySession(fresh);
+          } else {
+            loadReadySession(s);
+          }
+        }
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Gagal memuat latihan.'))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof ApiError ? err.message : 'Gagal memuat latihan.');
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
@@ -124,7 +195,12 @@ export function PracticeSessionView({ sessionId }: Props) {
           >
             <Stack spacing={1}>
               {(question.options ?? []).map((opt) => (
-                <FormControlLabel key={opt.id} value={opt.id} control={<Radio />} label={`${opt.label}. ${opt.text}`} />
+                <FormControlLabel
+                  key={opt.id}
+                  value={opt.id}
+                  control={<Radio />}
+                  label={`${opt.label}. ${opt.text}`}
+                />
               ))}
             </Stack>
           </RadioGroup>

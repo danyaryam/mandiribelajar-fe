@@ -29,7 +29,14 @@ export function LandingHow() {
         >
           {how.items.map((item) => (
             <Box key={item.step} sx={{ p: 4, borderRadius: 3, bgcolor: 'background.paper' }}>
-              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box
+                sx={{
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <Box
                   sx={{
                     width: 48,
@@ -77,7 +84,12 @@ export function LandingFeatures() {
           }}
         >
           {features.items.map((item) => (
-            <Stack key={item.title} direction="row" spacing={2} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+            <Stack
+              key={item.title}
+              direction="row"
+              spacing={2}
+              sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}
+            >
               <Box
                 sx={{
                   width: 44,
@@ -128,7 +140,16 @@ export function LandingPlans() {
           }}
         >
           {plans.items.map((plan) => (
-            <Box key={plan.name} sx={{ p: 4, borderRadius: 3, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+            <Box
+              key={plan.name}
+              sx={{
+                p: 4,
+                borderRadius: 3,
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
               <Typography variant="overline" color="primary">
                 {plan.name}
               </Typography>

@@ -87,7 +87,12 @@ export const LANDING = {
         name: 'Gratis',
         price: 0,
         period: 'selamanya',
-        features: ['Kuota latihan terbatas', 'Soal pilihan ganda', 'Akses katalog materi', 'Riwayat latihan'],
+        features: [
+          'Kuota latihan terbatas',
+          'Soal pilihan ganda',
+          'Akses katalog materi',
+          'Riwayat latihan',
+        ],
       },
       {
         name: 'Premium',

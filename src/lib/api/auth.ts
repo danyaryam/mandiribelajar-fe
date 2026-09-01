@@ -93,3 +93,35 @@ export async function fetchMe(signal?: AbortSignal): Promise<User | null> {
   });
   return userSchema.parse(data);
 }
+
+// ----------------------------------------------------------------------
+// Email lifecycle & password reset (api-contract.md §4).
+// ----------------------------------------------------------------------
+
+export async function requestEmailVerification(email: string): Promise<void> {
+  await apiFetch<unknown>(endpoints.auth.requestEmailVerification, {
+    method: 'post',
+    body: { email },
+  });
+}
+
+export async function confirmEmailVerification(token: string): Promise<void> {
+  await apiFetch<unknown>(endpoints.auth.confirmEmailVerification, {
+    method: 'post',
+    body: { token },
+  });
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  await apiFetch<unknown>(endpoints.auth.forgotPassword, {
+    method: 'post',
+    body: { email },
+  });
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await apiFetch<unknown>(endpoints.auth.resetPassword, {
+    method: 'post',
+    body: { token, newPassword },
+  });
+}

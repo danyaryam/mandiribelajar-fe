@@ -3,8 +3,8 @@
 import { z } from 'zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
@@ -57,6 +57,8 @@ type RegisterValues = {
 
 export function AuthView({ mode }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -84,7 +86,7 @@ export function AuthView({ mode }: Props) {
           acceptedTermsVersion: '2026-08-01',
         });
       }
-      router.push(paths.dashboard);
+      router.push(returnTo ? decodeURIComponent(returnTo) : paths.dashboard);
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Terjadi kesalahan. Coba lagi.');
@@ -98,7 +100,9 @@ export function AuthView({ mode }: Props) {
       <Stack spacing={1} sx={{ mb: 4, textAlign: 'center' }}>
         <Typography variant="h4">{isLogin ? 'Masuk' : 'Daftar'}</Typography>
         <Typography color="text.secondary">
-          {isLogin ? 'Selamat datang kembali di Mandiri Belajar.' : 'Mulai latihan soal berbasis AI.'}
+          {isLogin
+            ? 'Selamat datang kembali di Mandiri Belajar.'
+            : 'Mulai latihan soal berbasis AI.'}
         </Typography>
       </Stack>
 
@@ -132,6 +136,17 @@ export function AuthView({ mode }: Props) {
 
           {!isLogin && (
             <Field.Checkbox name="acceptedTerms" label="Saya menyetujui Syarat dan Ketentuan." />
+          )}
+
+          {isLogin && (
+            <Link
+              component={RouterLink}
+              href={paths.auth.forgotPassword}
+              variant="body2"
+              sx={{ alignSelf: 'flex-end' }}
+            >
+              Lupa kata sandi?
+            </Link>
           )}
 
           <Button type="submit" variant="contained" size="large" disabled={submitting}>

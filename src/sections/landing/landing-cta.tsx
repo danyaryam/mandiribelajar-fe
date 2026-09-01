@@ -31,14 +31,19 @@ export function LandingCta() {
             Siap Belajar Mandiri?
           </Typography>
           <Typography sx={{ mb: 4, mx: 'auto', maxWidth: 560, opacity: 0.9 }}>
-            Mulai latihan soal sekarang. Daftar gratis dan temukan materi sesuai jenjang dan kelasmu.
+            Mulai latihan soal sekarang. Daftar gratis dan temukan materi sesuai jenjang dan
+            kelasmu.
           </Typography>
           <Button
             size="large"
             variant="contained"
             component={RouterLink}
             href={paths.auth.register}
-            sx={{ bgcolor: 'background.paper', color: 'primary.main', '&:hover': { bgcolor: 'background.paper' } }}
+            sx={{
+              bgcolor: 'background.paper',
+              color: 'primary.main',
+              '&:hover': { bgcolor: 'background.paper' },
+            }}
             endIcon={<Iconify icon="carbon:direction-straight-right" />}
           >
             Daftar Gratis

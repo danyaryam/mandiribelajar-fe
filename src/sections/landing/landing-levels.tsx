@@ -32,7 +32,11 @@ export function LandingLevels({ levels }: Props) {
   return (
     <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
       <Container>
-        <LandingHeading caption={section.caption} title={section.title} description={section.description} />
+        <LandingHeading
+          caption={section.caption}
+          title={section.title}
+          description={section.description}
+        />
         <Box
           sx={{
             gap: 3,
@@ -56,7 +60,9 @@ export function LandingLevels({ levels }: Props) {
               <Typography variant="h4" sx={{ mb: 1 }}>
                 {level.name}
               </Typography>
-              <Typography color="text.secondary">{level.description ?? 'Lihat kelas & mata pelajaran'}</Typography>
+              <Typography color="text.secondary">
+                {level.description ?? 'Lihat kelas & mata pelajaran'}
+              </Typography>
             </Box>
           ))}
         </Box>

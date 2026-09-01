@@ -87,7 +87,7 @@ export const api = ky.create({
 export type ApiFetchOptions = {
   /** Query string params — empty string / null / undefined entries are skipped. */
   params?: Record<string, string | number | boolean | null | undefined>;
-  method?: 'get' | 'post' | 'put' | 'delete';
+  method?: 'get' | 'post' | 'put' | 'patch' | 'delete';
   body?: unknown;
   /** Extra HTTP headers (e.g. Authorization for authenticated calls). */
   headers?: Record<string, string>;

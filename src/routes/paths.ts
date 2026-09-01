@@ -48,7 +48,24 @@ export const paths = {
   /**
    * Profil & pembayaran
    */
+  /**
+   * Profil & pembayaran
+   */
   profile: '/profile',
+  usage: '/profile/usage',
+  progress: '/profile/progress',
+  bookmarks: '/profile/bookmarks',
+  /**
+   * Admin
+   */
+  admin: {
+    root: '/admin',
+    plans: '/admin/plans',
+    payments: '/admin/payments',
+    catalog: '/admin/catalog',
+    aiGenerations: '/admin/ai-generations',
+    questionReports: '/admin/question-reports',
+  },
   payments: {
     root: '/payments',
     plans: '/payments/plans',

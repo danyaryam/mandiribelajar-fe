@@ -1,0 +1,177 @@
+'use client';
+
+import type { AdminPlan } from 'src/lib/api/admin';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Card from '@mui/material/Card';
+import Alert from '@mui/material/Alert';
+import Stack from '@mui/material/Stack';
+import Table from '@mui/material/Table';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import TableRow from '@mui/material/TableRow';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+
+import { paths } from 'src/routes/paths';
+
+import { ApiError } from 'src/lib/api/client';
+import { getAccessToken } from 'src/lib/api/auth';
+import { listAdminPlans, createAdminPlan, updateAdminPlan } from 'src/lib/api/admin';
+
+// ----------------------------------------------------------------------
+// Admin: kelola paket / plans (Fase 7, api-contract.md §9 admin/plans).
+// ----------------------------------------------------------------------
+
+export function AdminPlansView() {
+  const router = useRouter();
+  const [plans, setPlans] = useState<AdminPlan[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ slug: '', name: '', quota: 5, amount: 0 });
+
+  useEffect(() => {
+    if (!getAccessToken()) {
+      router.replace(paths.auth.login);
+      return;
+    }
+    listAdminPlans()
+      .then(setPlans)
+      .catch((err) => setError(err instanceof ApiError ? err.message : 'Gagal memuat paket.'))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCreate = async () => {
+    try {
+      await createAdminPlan({ ...form, period: 'month' });
+      setOpen(false);
+      setPlans(await listAdminPlans());
+    } catch {
+      setError('Gagal membuat paket.');
+    }
+  };
+
+  const handleToggleActive = async (plan: AdminPlan) => {
+    try {
+      await updateAdminPlan(plan.id, {
+        isActive: !plan.isActive,
+        name: plan.name,
+        quota: plan.quota,
+      });
+      setPlans(await listAdminPlans());
+    } catch {
+      setError('Gagal memperbarui paket.');
+    }
+  };
+
+  return (
+    <Box sx={{ maxWidth: 960, mx: 'auto', px: 3, py: 8 }}>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4">Kelola Paket</Typography>
+        <Button variant="contained" onClick={() => setOpen(true)}>
+          + Paket Baru
+        </Button>
+      </Box>
+
+      {error && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {loading && <Typography color="text.secondary">Memuat…</Typography>}
+
+      <Card>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Paket</TableCell>
+              <TableCell>Harga</TableCell>
+              <TableCell>Kuota</TableCell>
+              <TableCell>Periode</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="right">Aksi</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {plans.map((plan) => (
+              <TableRow key={plan.id}>
+                <TableCell>
+                  <Typography sx={{ fontWeight: 600 }}>{plan.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {plan.slug}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  {plan.amount > 0 ? `${plan.currency} ${plan.amount}` : 'Gratis'}
+                </TableCell>
+                <TableCell>{plan.quota}</TableCell>
+                <TableCell>{plan.period}</TableCell>
+                <TableCell>
+                  <Chip
+                    size="small"
+                    color={plan.isActive ? 'success' : 'default'}
+                    label={plan.isActive ? 'Aktif' : 'Non-aktif'}
+                  />
+                </TableCell>
+                <TableCell align="right">
+                  <Button size="small" onClick={() => handleToggleActive(plan)}>
+                    {plan.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Paket Baru</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2.5} sx={{ mt: 1 }}>
+            <TextField
+              label="Slug"
+              value={form.slug}
+              onChange={(e) => setForm({ ...form, slug: e.target.value })}
+            />
+            <TextField
+              label="Nama"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+            <TextField
+              label="Kuota"
+              type="number"
+              value={form.quota}
+              onChange={(e) => setForm({ ...form, quota: Number(e.target.value) })}
+            />
+            <TextField
+              label="Harga (IDR)"
+              type="number"
+              value={form.amount}
+              onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Batal</Button>
+          <Button variant="contained" onClick={handleCreate}>
+            Simpan
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}

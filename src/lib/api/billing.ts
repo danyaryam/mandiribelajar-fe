@@ -1,9 +1,8 @@
 import { z } from 'zod';
 
 import { endpoints } from './endpoints';
-import { ApiError } from './client';
-import { apiFetch } from './client';
 import { getAccessToken } from './auth';
+import { ApiError, apiFetch } from './client';
 
 // ----------------------------------------------------------------------
 // Schemas — mirror api-contract.md §8 (plans, pays, usage).
